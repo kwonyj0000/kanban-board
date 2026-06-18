@@ -570,3 +570,232 @@ header h1 {
     padding: 28px 20px;
   }
 }
+
+/* ════════════════════════════════════════
+   공유 기능
+   ════════════════════════════════════════ */
+
+/* ── 초대 배너 ── */
+.invite-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff8e1;
+  border-bottom: 2px solid #f9a825;
+  padding: 10px 24px;
+  font-size: 0.88rem;
+  color: #5d4037;
+  gap: 12px;
+}
+
+.invite-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.banner-btn {
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.banner-btn.accept {
+  background-color: #f9a825;
+  color: #ffffff;
+}
+
+.banner-btn.accept:hover {
+  background-color: #f57f17;
+}
+
+.banner-btn.dismiss {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #5d4037;
+}
+
+.banner-btn.dismiss:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* ── Share 버튼 (헤더) ── */
+.share-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.share-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── 공유 모달 ── */
+.modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 18px;
+}
+
+/* ── 초대 폼 ── */
+.invite-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.invite-form .auth-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.invite-action-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+/* ── 초대 결과 메시지 ── */
+.invite-msg {
+  font-size: 0.82rem;
+  min-height: 18px;
+  margin-bottom: 16px;
+}
+
+.invite-msg.error   { color: #e74c3c; }
+.invite-msg.success { color: #27ae60; }
+
+/* ── 멤버 목록 ── */
+.member-list-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.member-list {
+  list-style: none;
+  margin-bottom: 20px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.member-empty {
+  padding: 12px 14px;
+  color: #999;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
+.member-email {
+  flex: 1;
+  font-size: 0.88rem;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.member-status.accepted {
+  background-color: #e8f5e9;
+  color: #27ae60;
+}
+
+.member-status.pending {
+  background-color: #fff8e1;
+  color: #f9a825;
+}
+
+.remove-member-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.remove-member-btn:hover {
+  background-color: #fdecea;
+}
+
+/* ── 모달 닫기 버튼 ── */
+.modal-close-btn {
+  width: 100%;
+  padding: 9px;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: #555;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+  background-color: #e0e0e0;
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 20px 16px;
+    max-width: 100%;
+    margin: 16px;
+    border-radius: 10px;
+  }
+}

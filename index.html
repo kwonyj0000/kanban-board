@@ -16,10 +16,20 @@
     <p>로딩 중...</p>
   </div>
 
+  <!-- 초대 알림 배너 -->
+  <div id="invite-banner" class="invite-banner hidden">
+    <span id="invite-notice">보드에 초대받았습니다.</span>
+    <div class="invite-banner-actions">
+      <button id="accept-invite-btn" class="banner-btn accept">수락</button>
+      <button id="dismiss-banner" class="banner-btn dismiss">닫기</button>
+    </div>
+  </div>
+
   <header id="main-header" style="display:none">
     <h1>Kanban Board</h1>
     <div class="user-info">
       <span id="user-email"></span>
+      <button id="share-btn" class="share-btn" style="display:none">공유</button>
       <button id="logout-btn">로그아웃</button>
     </div>
   </header>
@@ -53,6 +63,21 @@
     </section>
   </main>
 
+  <!-- 공유 모달 -->
+  <div id="share-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <h2 class="modal-title">보드 공유</h2>
+      <div class="invite-form">
+        <input type="email" id="invite-email" class="auth-input" placeholder="팀원 이메일 입력">
+        <button id="invite-btn" class="btn-primary invite-action-btn">초대</button>
+      </div>
+      <p id="invite-msg" class="invite-msg"></p>
+      <h3 class="member-list-title">팀원 목록</h3>
+      <ul id="member-list" class="member-list"></ul>
+      <button id="close-modal" class="modal-close-btn">닫기</button>
+    </div>
+  </div>
+
   <!-- app.js 자동 init 비활성화 → 인증 확인 후 수동 호출 -->
   <script>window.__skipAutoInit = true;</script>
   <script src="app.js"></script>
@@ -60,12 +85,14 @@
   <script>
     let boardReady = false;
 
-    async function showBoard(session) {
+    async function showBoard(session, boardIdOverride) {
       if (boardReady) return;
       boardReady = true;
 
       window.__userId  = session.user.id;
-      window.__boardId = await getOrCreateDefaultBoard(session.user.id);
+      const ownBoardId = await getOrCreateDefaultBoard(session.user.id);
+      window.__boardId = boardIdOverride || ownBoardId;
+      window.__isOwner = window.__boardId === ownBoardId;
 
       document.getElementById('user-email').textContent =
         session.user.email || session.user.user_metadata?.full_name || '사용자';
@@ -74,7 +101,44 @@
       document.getElementById('main-header').style.display  = '';
       document.getElementById('main-board').style.display   = '';
 
+      if (window.__isOwner) {
+        document.getElementById('share-btn').style.display = '';
+      }
+
       await init();
+      await setupInviteBanner();
+    }
+
+    async function setupInviteBanner() {
+      const invitations = await getPendingInvitations();
+      if (!invitations.length) return;
+
+      const inv    = invitations[0];
+      const banner = document.getElementById('invite-banner');
+      banner.classList.remove('hidden');
+
+      document.getElementById('accept-invite-btn').onclick = async () => {
+        const { error } = await acceptInvitation(inv.id);
+        if (!error) {
+          banner.classList.add('hidden');
+          window.__boardId = inv.board_id;
+          window.__isOwner = false;
+          document.getElementById('share-btn').style.display = 'none';
+          const data = await loadCardsFromSupabase();
+          renderBoard(data || { todo: [], inprogress: [], done: [] });
+          if (window.__realtimeChannel) {
+            window.__realtimeChannel.unsubscribe();
+          }
+          window.__realtimeChannel = subscribeToBoardCards(window.__boardId, async () => {
+            const d = await loadCardsFromSupabase();
+            if (d) renderBoard(d);
+          });
+        }
+      };
+
+      document.getElementById('dismiss-banner').onclick = () => {
+        banner.classList.add('hidden');
+      };
     }
 
     /* 세션 변경 감지 — 매직링크 / OAuth 콜백 처리 포함 */

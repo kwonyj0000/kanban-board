@@ -105,3 +105,45 @@
 **25. "지금까지 내가 전달한 프롬프트와 그에 상응해서 네가 한 작업을 정리해서 WORKFLOW.md로 저장해줘. 프롬프트는 그대로 써야하고 작업은 요약해서 작성해주면 돼. 이 내용을 CLAUDE.md에 반영해서 앞으로는 작업시 항상 WORKFLOW.md를 갱신하게 해줘."**
 - `WORKFLOW.md` 생성 (전체 작업 이력 정리)
 - `CLAUDE.md` 갱신 규칙 추가
+
+---
+
+## Session 3 — 보드 공유 기능 (Phase 3)
+
+**26. "이제 만들어진 kanban 보드를 팀원과 공유할수 있는 기능을 추가하려고해. 그 계획을 알려줘."**
+- 이메일 초대 방식 / 편집자 단일 권한 / Supabase Realtime 실시간 동기화 방향 확정
+- `docs/TASKS.md` Phase 3를 17개 태스크(P3-00A ~ P3-17)로 상세화
+- `docs/DatabaseDesign.md` ERD·스키마에 `board_members` 테이블 및 Phase 3 RLS SQL 추가
+
+**27. "Phase 3 추가 SQL 섹션의 쿼리를 수행하였습니다. 이후 작업 실행해주세요."**
+- `auth.js` — 공유 함수 6개 추가: `inviteMember`, `getPendingInvitations`, `acceptInvitation`, `getBoardMembers`, `removeMember`, `subscribeToBoardCards`
+- `app.js` — `renderBoard()` 추출, `renderMemberList()` / `setupShareBtn()` 추가, `init()`에 Realtime 구독 연결
+- `index.html` — 초대 알림 배너, Share 버튼(헤더), 공유 모달(초대 폼 + 멤버 목록) 추가; `showBoard()`에 `__isOwner` 판별·배너 체크 추가
+- `style.css` — 초대 배너, Share 버튼, 모달, 멤버 목록 CSS 추가
+- `app.test.js` — 공유 함수 mock 6개 추가, T-18~T-24 신규 테스트 추가 (24개 전체 통과)
+
+**28. "Failed to load resource: 500 / Cannot read properties of null (reading 'id')"**
+- 원인: `boards` RLS가 `board_members`를 조회하고 `board_members` RLS가 다시 `boards`를 조회하는 순환 참조 → PostgreSQL 500 에러
+- 수정 SQL ①: `SECURITY DEFINER` 함수 `is_board_member_accepted()` 생성 (순환 차단)
+- 수정 SQL ②: `boards_member_select` 정책을 함수 기반으로 교체
+- 수정 SQL ③: `cards_access` 정책도 함수 기반으로 단순화
+- `auth.js` — `getOrCreateDefaultBoard()`에서 `.single()` → `.maybeSingle()` 교체 (행 없을 때 null 반환, 에러 핸들링 추가)
+- `docs/DatabaseDesign.md` — Phase 3 SQL을 3단계 분리 실행 방식 + 함수 설명으로 갱신
+
+**29. "SQL 실행 완료했어. 이후 작업 계속해줘."**
+- 24개 전체 테스트 통과 재확인
+- `docs/DatabaseDesign.md` 업데이트 완료
+- `WORKFLOW.md` 갱신
+
+**30. "수락 버튼 클릭시 403 Forbidden 오류 발생"**
+- 원인 1: `user_accept_own_invitation` 정책에 `WITH CHECK` 미지정 → status가 'accepted'로 바뀐 행이 자기 조건 위반
+- 원인 2: `auth.users` 직접 조회 불안정, `auth.jwt()->>'email'` 비교 실패
+- 해결: `accept_board_invitation(p_invitation_id)` SECURITY DEFINER 함수 생성 (함수 내부에서 email·status 검증 후 UPDATE)
+- `auth.js` — `acceptInvitation()`을 `.rpc('accept_board_invitation')` 방식으로 교체
+
+**31. "RLS를 사용해야 보안에 안전한 거 아니야?" / "현재 방식 유지할게"**
+- SECURITY DEFINER 함수 방식도 동일한 보안 수준 (email 일치·pending 상태 검증 내부 수행)
+- 순환참조 문제로 RLS 정책 단독 적용이 불안정 → 현재 방식 유지 결정
+
+**32. "내가 해야하는 것 알려줘" / "드디어 성공!"**
+- Supabase SQL Editor에서 `accept_board_invitation()` 함수 실행 → 수락 버튼 정상 동작 확인

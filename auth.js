@@ -71,14 +71,15 @@ async function getOrCreateDefaultBoard(userId) {
     .select('id')
     .eq('user_id', userId)
     .limit(1)
-    .single();
+    .maybeSingle();
   if (data) return data.id;
 
-  const { data: newBoard } = await supabaseClient
+  const { data: newBoard, error } = await supabaseClient
     .from('boards')
     .insert({ user_id: userId, title: 'Kanban Board' })
     .select('id')
     .single();
+  if (error) throw new Error('보드 생성 실패: ' + error.message);
   return newBoard.id;
 }
 
@@ -109,4 +110,61 @@ async function loadCardsFromSupabase() {
     if (result[row.column_id] !== undefined) result[row.column_id].push(row.text);
   });
   return result;
+}
+
+/* ── Sharing ── */
+
+async function inviteMember(boardId, email) {
+  const { error } = await supabaseClient
+    .from('board_members')
+    .insert({ board_id: boardId, invited_email: email });
+  return { error };
+}
+
+async function getPendingInvitations() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabaseClient
+    .from('board_members')
+    .select('id, board_id')
+    .eq('invited_email', user.email)
+    .eq('status', 'pending');
+  return data || [];
+}
+
+async function acceptInvitation(invitationId) {
+  const { data, error } = await supabaseClient
+    .rpc('accept_board_invitation', { p_invitation_id: invitationId });
+  if (error) return { error };
+  if (!data) return { error: { message: '초대 수락 실패: 이메일이 일치하지 않거나 이미 수락됨' } };
+  return { error: null };
+}
+
+async function getBoardMembers(boardId) {
+  const { data } = await supabaseClient
+    .from('board_members')
+    .select('id, invited_email, status')
+    .eq('board_id', boardId)
+    .order('created_at');
+  return data || [];
+}
+
+async function removeMember(memberId) {
+  const { error } = await supabaseClient
+    .from('board_members')
+    .delete()
+    .eq('id', memberId);
+  return { error };
+}
+
+function subscribeToBoardCards(boardId, onChangeCallback) {
+  return supabaseClient
+    .channel(`board:${boardId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'cards',
+      filter: `board_id=eq.${boardId}`,
+    }, onChangeCallback)
+    .subscribe();
 }

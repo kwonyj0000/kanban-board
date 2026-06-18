@@ -304,16 +304,111 @@ function setupAddButton(btn) {
   });
 }
 
+/* ── Render Board ── */
+
+function renderBoard(data) {
+  COLUMNS.forEach(colId => {
+    document.getElementById(`${colId}-list`).innerHTML = '';
+  });
+  cardIdCounter = 0;
+  COLUMNS.forEach(colId => {
+    (data[colId] || []).forEach(text => addCardToColumn(colId, text));
+  });
+  updateBadges();
+}
+
+/* ── Share Modal ── */
+
+async function renderMemberList() {
+  const list = document.getElementById('member-list');
+  if (!list) return;
+  const members = await getBoardMembers(window.__boardId);
+  list.innerHTML = '';
+  if (members.length === 0) {
+    list.innerHTML = '<li class="member-empty">공유된 팀원이 없습니다.</li>';
+    return;
+  }
+  members.forEach(m => {
+    const li = document.createElement('li');
+    li.className = 'member-item';
+    const removeHtml = window.__isOwner
+      ? `<button class="remove-member-btn" data-id="${m.id}">삭제</button>` : '';
+    li.innerHTML = `
+      <span class="member-email">${m.invited_email}</span>
+      <span class="member-status ${m.status}">${m.status === 'accepted' ? '수락됨' : '대기중'}</span>
+      ${removeHtml}
+    `;
+    list.appendChild(li);
+  });
+  list.querySelectorAll('.remove-member-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await removeMember(btn.dataset.id);
+      await renderMemberList();
+    });
+  });
+}
+
+function setupShareBtn() {
+  const shareBtn = document.getElementById('share-btn');
+  if (!shareBtn) return;
+
+  shareBtn.addEventListener('click', async () => {
+    const modal = document.getElementById('share-modal');
+    modal.classList.remove('hidden');
+    document.getElementById('invite-msg').textContent = '';
+    await renderMemberList();
+  });
+
+  document.getElementById('close-modal').addEventListener('click', () => {
+    document.getElementById('share-modal').classList.add('hidden');
+  });
+
+  document.getElementById('share-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('share-modal').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('invite-btn').addEventListener('click', async () => {
+    const emailInput = document.getElementById('invite-email');
+    const email = emailInput.value.trim();
+    const msg = document.getElementById('invite-msg');
+    if (!email) {
+      msg.textContent = '이메일을 입력하세요.';
+      msg.className = 'invite-msg error';
+      return;
+    }
+    msg.textContent = '초대 중...';
+    msg.className = 'invite-msg';
+    const { error } = await inviteMember(window.__boardId, email);
+    if (error) {
+      msg.textContent = error.code === '23505' ? '이미 초대된 팀원입니다.' : '초대 실패: ' + error.message;
+      msg.className = 'invite-msg error';
+    } else {
+      msg.textContent = `${email}에게 초대를 보냈습니다.`;
+      msg.className = 'invite-msg success';
+      emailInput.value = '';
+      await renderMemberList();
+    }
+  });
+}
+
 /* ── Init ── */
 
 async function init() {
   const source = (await loadFromStorage()) || initialCards;
-  COLUMNS.forEach(columnId => {
-    (source[columnId] || []).forEach(text => addCardToColumn(columnId, text));
-  });
+  renderBoard(source);
   document.querySelectorAll('.column').forEach(setupColumnDrop);
   document.querySelectorAll('.add-btn').forEach(setupAddButton);
-  updateBadges();
+
+  if (typeof subscribeToBoardCards !== 'undefined' && window.__boardId) {
+    window.__realtimeChannel = subscribeToBoardCards(window.__boardId, async () => {
+      const data = await loadCardsFromSupabase();
+      if (data) renderBoard(data);
+    });
+  }
+
+  setupShareBtn();
 }
 
 /* ── Export (테스트) / Auto-init (브라우저) ── */
@@ -321,7 +416,8 @@ async function init() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     createCard, addCardToColumn, saveToStorage, loadFromStorage,
-    updateBadges, getDragAfterElement, init,
+    updateBadges, getDragAfterElement, init, renderBoard,
+    renderMemberList, setupShareBtn,
   };
 } else if (!window.__skipAutoInit) {
   init();
