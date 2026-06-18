@@ -1,6 +1,5 @@
 let cardIdCounter = 0;
 
-let STORAGE_KEY = 'kanban-board';
 const COLUMNS = ['todo', 'inprogress', 'done'];
 
 const initialCards = {
@@ -11,7 +10,7 @@ const initialCards = {
 
 /* ── Storage ── */
 
-function saveToStorage() {
+async function saveToStorage() {
   const data = {};
   COLUMNS.forEach(columnId => {
     const list = document.getElementById(`${columnId}-list`);
@@ -21,12 +20,11 @@ function saveToStorage() {
       return text ? text.textContent : (input ? input.value.trim() : '');
     }).filter(t => t);
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  await saveCardsToSupabase(data);
 }
 
-function loadFromStorage() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : null;
+async function loadFromStorage() {
+  return await loadCardsFromSupabase();
 }
 
 /* ── Badges ── */
@@ -308,11 +306,8 @@ function setupAddButton(btn) {
 
 /* ── Init ── */
 
-function init() {
-  if (typeof window !== 'undefined' && window.__userId) {
-    STORAGE_KEY = `kanban-board-${window.__userId}`;
-  }
-  const source = loadFromStorage() || initialCards;
+async function init() {
+  const source = (await loadFromStorage()) || initialCards;
   COLUMNS.forEach(columnId => {
     (source[columnId] || []).forEach(text => addCardToColumn(columnId, text));
   });

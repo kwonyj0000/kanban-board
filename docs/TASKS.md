@@ -50,36 +50,34 @@
 
 | # | 태스크 | 주체 | 상태 | 비고 |
 |---|--------|------|------|------|
-| A-01 | Supabase 프로젝트 생성 | 사용자 직접 | ⬜ 미완료 | Project URL · anon key 복사 |
-| A-02 | Supabase Auth URL 설정 (Site URL, Redirect URL) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 2 |
-| A-03 | Google Cloud OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 3 |
-| A-04 | GitHub OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 4 |
+| A-01 | Supabase 프로젝트 생성 | 사용자 직접 | ✅ 완료 | — |
+| A-02 | Supabase Auth URL 설정 (Site URL, Redirect URL) | 사용자 직접 | ✅ 완료 | — |
+| A-03 | Google Cloud OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ✅ 완료 | — |
+| A-04 | GitHub OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ✅ 완료 | — |
 | A-05 | `config.js` 생성 (Supabase URL · anon key) — 사용자가 직접 값 입력 필요 | 코드 | ✅ 완료 | `config.example.js` 제공 |
 | A-06 | `config.example.js` 생성 (키 없는 커밋용 템플릿) | 코드 | ✅ 완료 | — |
 | A-07 | `auth.js` 생성 (이메일·매직링크·Google·GitHub·로그아웃·세션) | 코드 | ✅ 완료 | — |
-| A-08 | `login.html` 생성 (비밀번호 탭 + 매직링크 탭 + Google/GitHub 버튼) | 코드 | ✅ 완료 | — |
+| A-08 | `login.html` 생성 (로그인 탭 + 회원가입 탭 + 매직링크 탭 + Google/GitHub 버튼) | 코드 | ✅ 완료 | 탭 3개로 분리 |
 | A-09 | `index.html` 수정 (세션 체크, 로딩 화면, 사용자 정보, 로그아웃) | 코드 | ✅ 완료 | — |
-| A-10 | `app.js` 수정 (사용자별 localStorage 키 분리) | 코드 | ✅ 완료 | `kanban-board-${userId}` |
+| A-10 | `app.js` 수정 (Supabase DB 연동, localStorage 제거) | 코드 | ✅ 완료 | Supabase 전용 |
 | A-11 | `style.css` 수정 (로그인 페이지 스타일 + 헤더 유저 정보) | 코드 | ✅ 완료 | — |
 | A-12 | `.gitignore`에 `config.js` 추가 | 코드 | ✅ 완료 | — |
-| A-13 | 로컬 검증 (이메일/Google/GitHub 로그인 동작 확인) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` 체크리스트 |
+| A-13 | 로컬 검증 (이메일/Google/GitHub 로그인 동작 확인) | 사용자 직접 | ✅ 완료 | — |
 | A-14 | `kanban-board` 레포에 push 및 Pages 반영 확인 | 코드 + 사용자 | ⬜ 미완료 | — |
 
 ---
 
-## Phase 2 — 백엔드 / RDB 연동
+## Phase DB — Supabase PostgreSQL 연동
 
-| # | 태스크 | 비고 |
-|---|--------|------|
-| 15 | 백엔드 프레임워크 선택 (Express / FastAPI) | — |
-| 16 | MySQL 또는 PostgreSQL 스키마 생성 | `docs/DatabaseDesign.md` 참고 |
-| 17 | REST API 구현 (`GET /boards`, `POST /cards`, `PATCH /cards/:id/move`, `DELETE /cards/:id`) | — |
-| 18 | `saveToStorage()` → API 호출로 교체 | `fetch()` 래퍼로 교체 |
-| 19 | `loadFromStorage()` → `GET /api/boards/:id` 호출로 교체 | — |
-| 20 | 카드 ID를 서버 발급 UUID로 전환 | DOM 기반 `card-N` 제거 |
-| 21 | JWT 기반 사용자 인증 추가 | 로그인/회원가입 UI 포함 |
-| 22 | 백엔드 단위 테스트 작성 (pytest 또는 Jest) | — |
-| 23 | CORS 설정 및 Authorization 헤더 처리 | — |
+> 상세 설정 가이드: `docs/SUPABASE_DB.md`
+
+| # | 태스크 | 주체 | 상태 | 비고 |
+|---|--------|------|------|------|
+| S-01 | Supabase SQL Editor에서 `boards` + `cards` 테이블 생성 + RLS 설정 | 사용자 직접 | ✅ 완료 | `docs/DatabaseDesign.md` 섹션 6 |
+| S-02 | `auth.js` — `getOrCreateDefaultBoard()` / `saveCardsToSupabase()` / `loadCardsFromSupabase()` 추가 | 코드 | ✅ 완료 | `board_id` 기반 |
+| S-03 | `app.js` — `saveToStorage()` / `loadFromStorage()` Supabase 전용, localStorage 완전 제거 | 코드 | ✅ 완료 | — |
+| S-04 | `index.html` — `showBoard()` async 전환, `window.__boardId` 설정, `await init()` | 코드 | ✅ 완료 | — |
+| S-05 | `app.test.js` — Supabase 함수 jest.fn() mock으로 교체 (17개 전체 통과) | 코드 | ✅ 완료 | — |
 
 ---
 

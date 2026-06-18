@@ -17,20 +17,26 @@
 
     <!-- 탭 -->
     <div class="auth-tabs">
-      <button type="button" class="tab-btn active" data-tab="password">비밀번호</button>
+      <button type="button" class="tab-btn active" data-tab="login">로그인</button>
+      <button type="button" class="tab-btn" data-tab="signup">회원가입</button>
       <button type="button" class="tab-btn" data-tab="magic">매직링크</button>
     </div>
 
-    <!-- 비밀번호 탭 -->
-    <div id="tab-password" class="tab-content">
-      <input type="email" id="email" class="auth-input" placeholder="이메일" autocomplete="email">
-      <input type="password" id="password" class="auth-input" placeholder="비밀번호 (6자 이상)" autocomplete="current-password">
-      <p class="error-msg" id="pw-error"></p>
-      <p class="success-msg" id="pw-success"></p>
-      <div class="btn-row">
-        <button type="button" id="login-btn" class="btn-primary">로그인</button>
-        <button type="button" id="signup-btn" class="btn-secondary">회원가입</button>
-      </div>
+    <!-- 로그인 탭 -->
+    <div id="tab-login" class="tab-content">
+      <input type="email" id="login-email" class="auth-input" placeholder="이메일" autocomplete="email">
+      <input type="password" id="login-password" class="auth-input" placeholder="비밀번호" autocomplete="current-password">
+      <p class="error-msg" id="login-error"></p>
+      <button type="button" id="login-btn" class="btn-primary" style="width:100%">로그인</button>
+    </div>
+
+    <!-- 회원가입 탭 -->
+    <div id="tab-signup" class="tab-content hidden">
+      <input type="email" id="signup-email" class="auth-input" placeholder="이메일" autocomplete="email">
+      <input type="password" id="signup-password" class="auth-input" placeholder="비밀번호 (6자 이상)" autocomplete="new-password">
+      <p class="error-msg" id="signup-error"></p>
+      <p class="success-msg" id="signup-success"></p>
+      <button type="button" id="signup-btn" class="btn-primary" style="width:100%">회원가입</button>
     </div>
 
     <!-- 매직링크 탭 -->
@@ -93,12 +99,16 @@
     }
 
     /* 입력 시 에러 테두리 제거 */
-    ['email', 'password'].forEach(id => {
-      document.getElementById(id).addEventListener('input', () => {
-        document.getElementById(id).classList.remove('input-error');
-        document.getElementById('pw-error').textContent = '';
+    function clearFieldError(inputEl, errorEl) {
+      inputEl.addEventListener('input', () => {
+        inputEl.classList.remove('input-error');
+        errorEl.textContent = '';
       });
-    });
+    }
+    clearFieldError(document.getElementById('login-email'),    document.getElementById('login-error'));
+    clearFieldError(document.getElementById('login-password'),  document.getElementById('login-error'));
+    clearFieldError(document.getElementById('signup-email'),   document.getElementById('signup-error'));
+    clearFieldError(document.getElementById('signup-password'), document.getElementById('signup-error'));
 
     /* ── 탭 전환 ── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -110,58 +120,53 @@
       });
     });
 
-    /* 빈 필드에 빨간 테두리 표시 후 반환 */
-    function validatePasswordForm() {
-      const emailEl    = document.getElementById('email');
-      const passwordEl = document.getElementById('password');
-      const errorEl    = document.getElementById('pw-error');
-      const email    = emailEl.value.trim();
-      const password = passwordEl.value;
+    /* 빈 필드 검사 헬퍼 */
+    function validateField(inputEl, errorEl, msg) {
+      if (!inputEl.value.trim()) {
+        inputEl.classList.add('input-error');
+        errorEl.textContent = msg;
+        inputEl.focus();
+        return false;
+      }
+      return true;
+    }
 
+    /* ── 로그인 ── */
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const emailEl    = document.getElementById('login-email');
+      const passwordEl = document.getElementById('login-password');
+      const errorEl    = document.getElementById('login-error');
       emailEl.classList.remove('input-error');
       passwordEl.classList.remove('input-error');
       errorEl.textContent = '';
 
-      if (!email) {
-        emailEl.classList.add('input-error');
-        errorEl.textContent = '이메일을 입력하세요.';
-        emailEl.focus();
-        return null;
-      }
-      if (!password) {
-        passwordEl.classList.add('input-error');
-        errorEl.textContent = '비밀번호를 입력하세요.';
-        passwordEl.focus();
-        return null;
-      }
-      return { email, password };
-    }
+      if (!validateField(emailEl, errorEl, '이메일을 입력하세요.')) return;
+      if (!validateField(passwordEl, errorEl, '비밀번호를 입력하세요.')) return;
 
-    /* ── 비밀번호 로그인 ── */
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const vals = validatePasswordForm();
-      if (!vals) return;
-      const errorEl = document.getElementById('pw-error');
-
-      const { error } = await signInWithEmail(vals.email, vals.password);
+      const { error } = await signInWithEmail(emailEl.value.trim(), passwordEl.value);
       if (error) errorEl.textContent = getErrorMessage(error);
     });
 
-    /* ── 이메일 회원가입 ── */
+    /* ── 회원가입 ── */
     document.getElementById('signup-btn').addEventListener('click', async () => {
-      const vals = validatePasswordForm();
-      if (!vals) return;
-      const errorEl  = document.getElementById('pw-error');
-      const successEl = document.getElementById('pw-success');
+      const emailEl    = document.getElementById('signup-email');
+      const passwordEl = document.getElementById('signup-password');
+      const errorEl    = document.getElementById('signup-error');
+      const successEl  = document.getElementById('signup-success');
+      emailEl.classList.remove('input-error');
+      passwordEl.classList.remove('input-error');
+      errorEl.textContent   = '';
       successEl.textContent = '';
 
-      if (vals.password.length < 6) {
-        document.getElementById('password').classList.add('input-error');
+      if (!validateField(emailEl, errorEl, '이메일을 입력하세요.')) return;
+      if (!validateField(passwordEl, errorEl, '비밀번호를 입력하세요.')) return;
+      if (passwordEl.value.length < 6) {
+        passwordEl.classList.add('input-error');
         errorEl.textContent = '비밀번호는 6자 이상이어야 합니다.';
         return;
       }
 
-      const { data, error } = await signUpWithEmail(vals.email, vals.password);
+      const { data, error } = await signUpWithEmail(emailEl.value.trim(), passwordEl.value);
       if (error) {
         errorEl.textContent = getErrorMessage(error);
       } else if (data.user && data.user.identities && data.user.identities.length === 0) {

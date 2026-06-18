@@ -1,157 +1,185 @@
 # Database Design
-# Kanban Board
+# Kanban Board — Supabase PostgreSQL
 
 ---
 
-## 1. Phase 1 — localStorage 스키마 (현재)
+## 1. 아키텍처 개요
 
-### 저장 키
+| 역할 | 담당 |
+|------|------|
+| 사용자 인증 / 계정 관리 | Supabase Auth (`auth.users`) — 별도 테이블 불필요 |
+| 보드 데이터 저장 | Supabase PostgreSQL (`public.boards`, `public.cards`) |
+| 보안 (행 수준 접근 제어) | Row Level Security (RLS) |
+
+---
+
+## 2. ERD
+
 ```
-kanban-board
+auth.users ──────────< boards >──────────< cards
+   (Supabase 관리)    user_id FK           board_id FK
 ```
 
-### 데이터 구조 (JSON)
-```json
-{
-  "todo":       ["카드 텍스트1", "카드 텍스트2"],
-  "inprogress": ["카드 텍스트3"],
-  "done":       ["카드 텍스트4", "카드 텍스트5"]
+- `auth.users`: Supabase가 자동 관리. 직접 생성 불필요.
+- `boards`: 사용자당 1개(기본) 또는 여러 개의 보드.
+- `cards`: 보드에 속하며 컬럼(`todo` / `inprogress` / `done`)과 순서(`position`) 보유.
+
+---
+
+## 3. 테이블 스키마
+
+### 3.1 boards
+
+```sql
+create table public.boards (
+  id         uuid        primary key default gen_random_uuid(),
+  user_id    uuid        not null references auth.users on delete cascade,
+  title      text        not null default 'Kanban Board',
+  created_at timestamptz not null default now()
+);
+
+alter table public.boards enable row level security;
+
+create policy "users manage own boards"
+  on public.boards for all
+  using  (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+```
+
+### 3.2 cards
+
+```sql
+create table public.cards (
+  id         uuid        primary key default gen_random_uuid(),
+  board_id   uuid        not null references public.boards on delete cascade,
+  column_id  text        not null check (column_id in ('todo', 'inprogress', 'done')),
+  text       text        not null,
+  position   integer     not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.cards enable row level security;
+
+create policy "users manage cards via board"
+  on public.cards for all
+  using  (exists (
+    select 1 from public.boards
+    where boards.id = cards.board_id
+      and boards.user_id = auth.uid()
+  ))
+  with check (exists (
+    select 1 from public.boards
+    where boards.id = cards.board_id
+      and boards.user_id = auth.uid()
+  ));
+```
+
+> **`cards` RLS 방식**: `board_id → boards.user_id = auth.uid()` 경로로 소유자 확인.  
+> cards 테이블에 user_id를 중복 저장하지 않고 boards를 통해 소유권을 검증한다.
+
+---
+
+## 4. 주요 쿼리
+
+### 기본 보드 가져오기 (없으면 생성)
+
+```js
+// auth.js — getOrCreateDefaultBoard()
+const { data } = await supabaseClient
+  .from('boards')
+  .select('id')
+  .eq('user_id', userId)
+  .limit(1)
+  .single();
+
+if (!data) {
+  const { data: newBoard } = await supabaseClient
+    .from('boards')
+    .insert({ user_id: userId, title: 'Kanban Board' })
+    .select('id')
+    .single();
+  return newBoard.id;
 }
+return data.id;
 ```
 
-### 특징
-- 카드 순서는 배열 인덱스로 유지
-- 카드 내용(텍스트)만 저장, ID/타임스탬프 없음
-- 단일 사용자, 단일 보드만 지원
+### 카드 전체 저장 (board 기준)
 
-### 한계
-- 다중 사용자 불가
-- 카드 생성일, 수정일 추적 불가
-- 브라우저가 다르면 데이터 공유 불가
+```js
+await supabaseClient.from('cards').delete().eq('board_id', boardId);
+await supabaseClient.from('cards').insert(rows); // rows: [{ board_id, column_id, text, position }]
+```
+
+### 카드 전체 로드
+
+```js
+const { data } = await supabaseClient
+  .from('cards')
+  .select('column_id, text, position')
+  .eq('board_id', boardId)
+  .order('position');
+```
 
 ---
 
-## 2. Phase 2 — RDB 스키마 (MySQL / PostgreSQL 공통)
+## 5. 로컬스토리지 → Supabase 마이그레이션 전략
 
-### ERD
+| 항목 | Phase 1 (localStorage) | Phase DB (Supabase) |
+|------|----------------------|---------------------|
+| 사용자 | 없음 (단일 사용자) | `auth.users` |
+| 보드 | 없음 (하드코딩) | `boards` 테이블 |
+| 컬럼 | 하드코딩 ('todo' / 'inprogress' / 'done') | `cards.column_id` 텍스트로 유지 |
+| 카드 저장 | `saveToStorage()` → localStorage | `saveCardsToSupabase()` → Supabase |
+| 카드 로드 | `loadFromStorage()` → localStorage | `loadCardsFromSupabase()` → Supabase |
+| 카드 식별자 | DOM 기반 `card-N` | Supabase 발급 UUID |
 
-```
-users ──────────< boards >──────────< columns >──────────< cards
-  1               N    1              N    1               N
-```
+---
 
-### 2.1 users 테이블
+## 6. SQL 전체 실행 스크립트 (Supabase SQL Editor)
+
+기존 `cards` 테이블이 있다면 먼저 삭제 후 재생성:
 
 ```sql
-CREATE TABLE users (
-  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,  -- PostgreSQL: BIGSERIAL
-  email      VARCHAR(255) NOT NULL UNIQUE,
-  password   VARCHAR(255) NOT NULL,                    -- bcrypt 해시
-  name       VARCHAR(100) NOT NULL,
-  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- 기존 테이블 삭제 (이미 생성했다면)
+drop table if exists public.cards;
+
+-- boards 테이블 생성
+create table public.boards (
+  id         uuid        primary key default gen_random_uuid(),
+  user_id    uuid        not null references auth.users on delete cascade,
+  title      text        not null default 'Kanban Board',
+  created_at timestamptz not null default now()
 );
-```
 
-### 2.2 boards 테이블
+alter table public.boards enable row level security;
 
-```sql
-CREATE TABLE boards (
-  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
-  user_id    BIGINT       NOT NULL,
-  title      VARCHAR(255) NOT NULL DEFAULT 'Kanban Board',
-  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+create policy "users manage own boards"
+  on public.boards for all
+  using  (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- cards 테이블 재생성 (board_id 기반)
+create table public.cards (
+  id         uuid        primary key default gen_random_uuid(),
+  board_id   uuid        not null references public.boards on delete cascade,
+  column_id  text        not null check (column_id in ('todo', 'inprogress', 'done')),
+  text       text        not null,
+  position   integer     not null default 0,
+  created_at timestamptz not null default now()
 );
+
+alter table public.cards enable row level security;
+
+create policy "users manage cards via board"
+  on public.cards for all
+  using  (exists (
+    select 1 from public.boards
+    where boards.id = cards.board_id
+      and boards.user_id = auth.uid()
+  ))
+  with check (exists (
+    select 1 from public.boards
+    where boards.id = cards.board_id
+      and boards.user_id = auth.uid()
+  ));
 ```
-
-### 2.3 columns 테이블
-
-```sql
-CREATE TABLE columns (
-  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
-  board_id   BIGINT       NOT NULL,
-  name       VARCHAR(100) NOT NULL,       -- 'To-do', 'In-progress', 'Done'
-  slug       VARCHAR(50)  NOT NULL,       -- 'todo', 'inprogress', 'done'
-  position   INT          NOT NULL DEFAULT 0,
-  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
-);
-```
-
-### 2.4 cards 테이블
-
-```sql
-CREATE TABLE cards (
-  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
-  column_id  BIGINT       NOT NULL,
-  content    TEXT         NOT NULL,
-  position   INT          NOT NULL DEFAULT 0,  -- 같은 컬럼 내 카드 순서
-  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE
-);
-```
-
----
-
-## 3. 인덱스 설계
-
-```sql
--- 사용자별 보드 조회
-CREATE INDEX idx_boards_user_id ON boards(user_id);
-
--- 보드별 컬럼 조회 (순서 포함)
-CREATE INDEX idx_columns_board_position ON columns(board_id, position);
-
--- 컬럼별 카드 조회 (순서 포함)
-CREATE INDEX idx_cards_column_position ON cards(column_id, position);
-```
-
----
-
-## 4. 주요 API 쿼리 예시
-
-### 보드 전체 로드
-```sql
-SELECT c.id, c.content, c.position, col.slug
-FROM   cards c
-JOIN   columns col ON c.column_id = col.id
-WHERE  col.board_id = :board_id
-ORDER  BY col.position, c.position;
-```
-
-### 카드 이동 (컬럼 변경)
-```sql
-UPDATE cards
-SET    column_id = :new_column_id,
-       position  = :new_position,
-       updated_at = NOW()
-WHERE  id = :card_id;
-```
-
----
-
-## 5. Phase 1 → Phase 2 마이그레이션 전략
-
-| 항목 | Phase 1 (localStorage) | Phase 2 (RDB) |
-|------|----------------------|--------------|
-| 카드 식별자 | DOM ID (`card-N`) | DB `cards.id` (BIGINT) |
-| 데이터 저장 | `saveToStorage()` | `POST/PATCH /api/cards` |
-| 데이터 로드 | `loadFromStorage()` | `GET /api/boards/:id` |
-| 카드 순서 | 배열 인덱스 | `cards.position` 컬럼 |
-| 다중 사용자 | 불가 | `users` 테이블로 분리 |
-
-> **전환 방법**: `saveToStorage()` / `loadFromStorage()` 두 함수를 API 호출 래퍼로 교체하면 나머지 UI 로직 변경 없음.
-
----
-
-## 6. MySQL vs PostgreSQL 차이점
-
-| 항목 | MySQL | PostgreSQL |
-|------|-------|-----------|
-| AUTO_INCREMENT | `AUTO_INCREMENT` | `SERIAL` / `BIGSERIAL` |
-| ON UPDATE | `ON UPDATE CURRENT_TIMESTAMP` | 트리거로 구현 |
-| JSON 저장 | `JSON` 타입 지원 | `JSONB` (인덱싱 가능) |
-| 전문 검색 | `FULLTEXT INDEX` | `tsvector` / `GIN` 인덱스 |

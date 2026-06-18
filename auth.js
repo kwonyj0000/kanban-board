@@ -62,3 +62,51 @@ async function getSession() {
 function onAuthStateChange(callback) {
   return supabaseClient.auth.onAuthStateChange(callback);
 }
+
+/* ── Kanban DB ── */
+
+async function getOrCreateDefaultBoard(userId) {
+  const { data } = await supabaseClient
+    .from('boards')
+    .select('id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+  if (data) return data.id;
+
+  const { data: newBoard } = await supabaseClient
+    .from('boards')
+    .insert({ user_id: userId, title: 'Kanban Board' })
+    .select('id')
+    .single();
+  return newBoard.id;
+}
+
+async function saveCardsToSupabase(data) {
+  const boardId = window.__boardId;
+  await supabaseClient.from('cards').delete().eq('board_id', boardId);
+  const rows = [];
+  ['todo', 'inprogress', 'done'].forEach(col => {
+    (data[col] || []).forEach((text, idx) => {
+      rows.push({ board_id: boardId, column_id: col, text, position: idx });
+    });
+  });
+  if (rows.length > 0) {
+    await supabaseClient.from('cards').insert(rows);
+  }
+}
+
+async function loadCardsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from('cards')
+    .select('column_id, text, position')
+    .eq('board_id', window.__boardId)
+    .order('position');
+  if (error) return null;
+  if (!data || data.length === 0) return null;
+  const result = { todo: [], inprogress: [], done: [] };
+  data.forEach(row => {
+    if (result[row.column_id] !== undefined) result[row.column_id].push(row.text);
+  });
+  return result;
+}

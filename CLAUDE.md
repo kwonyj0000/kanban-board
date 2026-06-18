@@ -28,25 +28,40 @@ npm test -- --testNamePattern="createCard"
 
 ## Architecture
 
-순수 HTML/CSS/JS 단일 페이지. 빌드 도구 없음.
+순수 HTML/CSS/JS 단일 페이지. 빌드 도구 없음. 인증 및 데이터 저장은 Supabase 사용.
 
-- `index.html` — 3컬럼 구조 마크업 (`#todo`, `#inprogress`, `#done`)
+- `index.html` — 3컬럼 구조 마크업 (`#todo`, `#inprogress`, `#done`). 세션 확인 후 보드 표시.
+- `login.html` — 로그인/회원가입 UI (로그인 탭 + 회원가입 탭 + 매직링크 탭 + Google/GitHub OAuth)
 - `style.css` — 레이아웃(flexbox) + 컴포넌트 스타일. `.dragging` / `.drag-over` 는 JS가 토글하는 상태 클래스
-- `app.js` — 모든 로직 포함. 진입점은 `init()`. 상태는 DOM + localStorage에만 존재 (별도 상태 객체 없음)
+- `app.js` — 모든 로직 포함. 진입점은 `init()`. 데이터는 Supabase에만 저장.
+- `auth.js` — Supabase 클라이언트 초기화, 인증 함수, DB 함수 (`getOrCreateDefaultBoard`, `saveCardsToSupabase`, `loadCardsFromSupabase`)
+- `config.js` — Supabase URL·anon key (`.gitignore` 제외, `config.example.js` 제공)
 
 ### app.js 핵심 흐름
 
-1. `init()` 호출 시 `loadFromStorage()` → 없으면 `initialCards` fallback
-2. 카드 생성은 `createCard(text)` 로만 수행 (drag 이벤트, delete 버튼을 여기서 바인딩)
-3. 카드 추가/삭제/이동 후 반드시 `saveToStorage()` 호출
-4. localStorage 스키마: `{ todo: string[], inprogress: string[], done: string[] }` (키: `'kanban-board'`)
+1. `index.html`에서 세션 확인 → `window.__userId`, `window.__boardId` 설정 → `init()` 호출
+2. `init()` 호출 시 `loadFromStorage()` → `loadCardsFromSupabase()` → 없으면 `initialCards` fallback
+3. 카드 생성은 `createCard(text)` 로만 수행 (drag 이벤트, delete 버튼을 여기서 바인딩)
+4. 카드 추가/삭제/이동 후 반드시 `saveToStorage()` → `saveCardsToSupabase()` 호출
+5. 데이터 구조: `{ todo: string[], inprogress: string[], done: string[] }` (Supabase `cards` 테이블)
+
+### Supabase 테이블 구조
+
+- `boards`: `id`, `user_id`, `title` — 사용자별 보드 (RLS: 본인 보드만 접근)
+- `cards`: `id`, `board_id`, `column_id`, `text`, `position` — 카드 (RLS: board → user 경로로 소유 확인)
+- 상세 스키마: `docs/DatabaseDesign.md`
 
 ## Testing
 
 - 프레임워크: **Jest + jest-environment-jsdom** (DOM 시뮬레이션)
 - 테스트 파일: `app.test.js`
+- Supabase 함수(`saveCardsToSupabase`, `loadCardsFromSupabase`)는 `global` mock으로 대체
 - 작업 후 검증은 브라우저 직접 열기 또는 `python3 -m http.server` 사용. **Playwright 사용 금지.**
 
-## Future: RDB 연동
+## Workflow 기록
 
-Phase 2에서 MySQL/PostgreSQL 연동 시 `saveToStorage()` / `loadFromStorage()` 를 API 호출로 교체하면 나머지 로직 변경 최소화 가능. 카드 ID는 DOM 기반 `card-N` → 서버 발급 UUID로 교체 필요. 상세 스키마는 `docs/` 참고.
+작업을 수행한 후에는 반드시 `WORKFLOW.md`를 갱신한다.
+
+- 사용자 프롬프트는 **원문 그대로** 기록
+- 수행한 작업은 **요약**하여 기록
+- 형식: 번호 순 목록, 프롬프트를 굵은 따옴표로, 작업 내용을 하위 항목으로
