@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban Board</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Kanban Board</h1>
+  </header>
+
+  <main class="board">
+    <section class="column" id="todo">
+      <div class="column-header todo-header">
+        <h2>To-do</h2>
+        <span class="badge" id="todo-badge">0</span>
+        <button class="add-btn" data-target="todo" title="카드 추가">+</button>
+      </div>
+      <div class="card-list" id="todo-list"></div>
+    </section>
+
+    <section class="column" id="inprogress">
+      <div class="column-header inprogress-header">
+        <h2>In-progress</h2>
+        <span class="badge" id="inprogress-badge">0</span>
+        <button class="add-btn" data-target="inprogress" title="카드 추가">+</button>
+      </div>
+      <div class="card-list" id="inprogress-list"></div>
+    </section>
+
+    <section class="column" id="done">
+      <div class="column-header done-header">
+        <h2>Done</h2>
+        <span class="badge" id="done-badge">0</span>
+        <button class="add-btn" data-target="done" title="카드 추가">+</button>
+      </div>
+      <div class="card-list" id="done-list"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
