@@ -45,6 +45,23 @@ header h1 {
   white-space: nowrap;
 }
 
+.board-switcher {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 0.82rem;
+  cursor: pointer;
+  max-width: 150px;
+  outline: none;
+}
+
+.board-switcher option {
+  background: #2c3e50;
+  color: #ffffff;
+}
+
 #logout-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.35);

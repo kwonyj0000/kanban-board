@@ -28,6 +28,7 @@
   <header id="main-header" style="display:none">
     <h1>Kanban Board</h1>
     <div class="user-info">
+      <select id="board-switcher" class="board-switcher" style="display:none"></select>
       <span id="user-email"></span>
       <button id="share-btn" class="share-btn" style="display:none">공유</button>
       <button id="logout-btn">로그아웃</button>
@@ -89,10 +90,11 @@
       if (boardReady) return;
       boardReady = true;
 
-      window.__userId  = session.user.id;
-      const ownBoardId = await getOrCreateDefaultBoard(session.user.id);
-      window.__boardId = boardIdOverride || ownBoardId;
-      window.__isOwner = window.__boardId === ownBoardId;
+      window.__userId   = session.user.id;
+      const ownBoardId  = await getOrCreateDefaultBoard(session.user.id);
+      window.__ownBoardId = ownBoardId;
+      window.__boardId  = boardIdOverride || ownBoardId;
+      window.__isOwner  = window.__boardId === ownBoardId;
 
       document.getElementById('user-email').textContent =
         session.user.email || session.user.user_metadata?.full_name || '사용자';
@@ -107,6 +109,43 @@
 
       await init();
       await setupInviteBanner();
+      await setupBoardSwitcher();
+    }
+
+    /* 보드 전환 셀렉터 — 수락된 공유 보드가 있을 때만 표시 */
+    async function setupBoardSwitcher() {
+      const sharedBoards = await getAcceptedSharedBoards();
+      const switcher = document.getElementById('board-switcher');
+
+      if (!sharedBoards.length) {
+        switcher.style.display = 'none';
+        return;
+      }
+
+      switcher.style.display = '';
+      switcher.innerHTML = `<option value="${window.__ownBoardId}">내 보드</option>`;
+      sharedBoards.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.title || '공유 보드';
+        switcher.appendChild(opt);
+      });
+      switcher.value = window.__boardId;
+
+      switcher.onchange = async () => {
+        const selectedId = switcher.value;
+        const isOwner    = selectedId === window.__ownBoardId;
+        window.__boardId = selectedId;
+        window.__isOwner = isOwner;
+        document.getElementById('share-btn').style.display = isOwner ? '' : 'none';
+        if (window.__realtimeChannel) window.__realtimeChannel.unsubscribe();
+        const data = await loadCardsFromSupabase();
+        renderBoard(data || { todo: [], inprogress: [], done: [] });
+        window.__realtimeChannel = subscribeToBoardCards(window.__boardId, async () => {
+          const d = await loadCardsFromSupabase();
+          if (d) renderBoard(d);
+        });
+      };
     }
 
     async function setupInviteBanner() {
@@ -124,15 +163,15 @@
           window.__boardId = inv.board_id;
           window.__isOwner = false;
           document.getElementById('share-btn').style.display = 'none';
+          if (window.__realtimeChannel) window.__realtimeChannel.unsubscribe();
           const data = await loadCardsFromSupabase();
           renderBoard(data || { todo: [], inprogress: [], done: [] });
-          if (window.__realtimeChannel) {
-            window.__realtimeChannel.unsubscribe();
-          }
           window.__realtimeChannel = subscribeToBoardCards(window.__boardId, async () => {
             const d = await loadCardsFromSupabase();
             if (d) renderBoard(d);
           });
+          /* 수락 후 셀렉터 갱신 — 새 공유 보드가 목록에 추가됨 */
+          await setupBoardSwitcher();
         }
       };
 

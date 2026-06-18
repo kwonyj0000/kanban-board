@@ -147,3 +147,13 @@
 
 **32. "내가 해야하는 것 알려줘" / "드디어 성공!"**
 - Supabase SQL Editor에서 `accept_board_invitation()` 함수 실행 → 수락 버튼 정상 동작 확인
+
+**33. "일단 현재까지 수정한 사항에 대해서 수정이 필요한 md파일에 업데이트 해주고 각 repo에 commit & push 해줘."**
+- `docs/DatabaseDesign.md` — `accept_board_invitation()` SECURITY DEFINER 함수 코드 및 3.4 보안 함수 섹션 추가
+- `kosa-vibecoding-2026-3rd` 레포: kanban Phase 3 변경사항 commit & push
+- `kwonyj0000/kanban-board` 레포: 동기화 후 commit & push
+
+**34. "보드 전환 기능 구현해줘"**
+- `auth.js` — `getAcceptedSharedBoards()` 추가 (수락된 공유 보드 목록 조회)
+- `index.html` — 헤더에 `<select id="board-switcher">` 추가; `setupBoardSwitcher()` 함수 구현 (공유 보드 셀렉터, 전환 시 Realtime 재구독); `showBoard()`에 `window.__ownBoardId` 추가, `setupBoardSwitcher()` 호출; 초대 수락 후 셀렉터 자동 갱신
+- `style.css` — `.board-switcher` / `.board-switcher option` 스타일 추가 (헤더 반투명 배경)

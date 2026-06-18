@@ -139,12 +139,23 @@
 
 ---
 
-## Phase 3 — 추후 과제
+## Phase 4 — 보드 전환 (Board Switcher)
+
+| # | 태스크 | 주체 | 상태 |
+|---|--------|------|------|
+| P4-01 | `auth.js` — `getAcceptedSharedBoards()` 추가 | 코드 | ✅ 완료 |
+| P4-02 | `index.html` — 헤더 `<select id="board-switcher">` 추가 | 코드 | ✅ 완료 |
+| P4-03 | `index.html` — `setupBoardSwitcher()` 구현 (셀렉터 옵션, onchange 전환) | 코드 | ✅ 완료 |
+| P4-04 | `index.html` — 수락 후 `setupBoardSwitcher()` 재호출로 목록 갱신 | 코드 | ✅ 완료 |
+| P4-05 | `style.css` — `.board-switcher` 헤더 스타일 추가 | 코드 | ✅ 완료 |
+
+---
+
+## 추후 과제
 
 | # | 태스크 | 비고 |
 |---|--------|------|
-| P4-01 | 멀티 보드 (여러 보드 생성/전환) | — |
-| P4-02 | 다크모드 지원 | CSS Variables 기반 |
+| F-01 | 다크모드 지원 | CSS Variables 기반 |
 
 ---
 

@@ -157,6 +157,18 @@ async function removeMember(memberId) {
   return { error };
 }
 
+async function getAcceptedSharedBoards() {
+  const { data } = await supabaseClient
+    .from('board_members')
+    .select('board_id, boards(id, title)')
+    .eq('status', 'accepted')
+    .not('user_id', 'is', null);
+  return (data || []).map(m => ({
+    id: m.board_id,
+    title: m.boards?.title || '공유 보드',
+  }));
+}
+
 function subscribeToBoardCards(boardId, onChangeCallback) {
   return supabaseClient
     .channel(`board:${boardId}`)
