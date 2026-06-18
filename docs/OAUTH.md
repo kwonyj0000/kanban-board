@@ -99,6 +99,27 @@ GitHub Pages(정적 사이트)에서 백엔드 없이 Supabase JS SDK(CDN)만으
 
 ---
 
+## Step 5 — Magic Link 설정 (추가 설정 없음)
+
+Magic Link는 **Email provider가 활성화되어 있으면 별도 설정 없이 사용 가능**합니다.
+
+| 항목 | 필요 여부 |
+|------|----------|
+| Email provider Enable | 필수 (Step 2에서 이미 설정) |
+| Magic Link 별도 토글 | 없음 (signInWithOtp 호출로 자동 작동) |
+| 이메일 템플릿 수정 | 선택 — **Authentication > Email Templates > Magic Link** 에서 한국어로 변경 가능 |
+| SMTP 설정 | 테스트엔 불필요 (무료 플랜 시간당 2건 제한), 프로덕션엔 권장 |
+
+> **Magic Link 작동 방식**  
+> 1. 사용자가 이메일 입력 후 "링크 전송" 클릭  
+> 2. Supabase가 1회용 로그인 링크 이메일 발송  
+> 3. 링크 클릭 → `index.html?code=...` 로 리다이렉트  
+> 4. Supabase JS 클라이언트가 코드를 자동 교환하여 세션 수립  
+> 5. `onAuthStateChange('SIGNED_IN')` 이벤트 → 보드 표시  
+> 비밀번호 불필요, 이메일 인증과 로그인이 한 번에 완료됨
+
+---
+
 ## Step 6 — 코드 구현
 
 ### 생성 파일
@@ -133,11 +154,14 @@ const SUPABASE_ANON = '<anon-public-key>';
 ### auth.js 주요 함수
 
 ```js
-// 이메일 회원가입
+// 이메일 + 비밀번호 회원가입
 async function signUpWithEmail(email, password)
 
-// 이메일 로그인
+// 이메일 + 비밀번호 로그인
 async function signInWithEmail(email, password)
+
+// 매직링크 발송 (비밀번호 없는 로그인)
+async function signInWithMagicLink(email)
 
 // Google OAuth 로그인
 async function signInWithGoogle()
@@ -151,7 +175,7 @@ async function signOut()
 // 현재 세션 반환
 async function getSession()
 
-// 세션 변경 감지 (자동 리다이렉트에 활용)
+// 세션 변경 감지 (매직링크/OAuth 콜백 자동 처리에 활용)
 function onAuthStateChange(callback)
 ```
 
@@ -195,7 +219,9 @@ git push
 ## 검증 체크리스트
 
 - [ ] `localhost:8080` 접속 시 `login.html`로 리다이렉트
-- [ ] 이메일 회원가입 → 인증 메일 수신 → 로그인 성공
+- [ ] 이메일 + 비밀번호 회원가입 → 확인 메일 수신 → 로그인 성공
+- [ ] 이메일 + 비밀번호 로그인 → 보드 진입
+- [ ] 매직링크 탭 → 이메일 입력 → "이메일을 확인하세요" 화면 전환 → 메일 링크 클릭 → 보드 자동 진입
 - [ ] Google 버튼 → OAuth → 보드 진입
 - [ ] GitHub 버튼 → OAuth → 보드 진입
 - [ ] 로그아웃 → `login.html` 이동

@@ -1,6 +1,6 @@
 let cardIdCounter = 0;
 
-const STORAGE_KEY = 'kanban-board';
+let STORAGE_KEY = 'kanban-board';
 const COLUMNS = ['todo', 'inprogress', 'done'];
 
 const initialCards = {
@@ -309,6 +309,9 @@ function setupAddButton(btn) {
 /* ── Init ── */
 
 function init() {
+  if (typeof window !== 'undefined' && window.__userId) {
+    STORAGE_KEY = `kanban-board-${window.__userId}`;
+  }
   const source = loadFromStorage() || initialCards;
   COLUMNS.forEach(columnId => {
     (source[columnId] || []).forEach(text => addCardToColumn(columnId, text));
@@ -325,6 +328,6 @@ if (typeof module !== 'undefined' && module.exports) {
     createCard, addCardToColumn, saveToStorage, loadFromStorage,
     updateBadges, getDragAfterElement, init,
   };
-} else {
+} else if (!window.__skipAutoInit) {
   init();
 }

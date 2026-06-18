@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 — Kanban Board</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+</head>
+<body class="login-page">
+
+  <div class="login-card">
+    <h1 class="login-title">Kanban Board</h1>
+    <p class="login-subtitle">로그인하여 보드를 시작하세요</p>
+
+    <!-- 탭 -->
+    <div class="auth-tabs">
+      <button class="tab-btn active" data-tab="password">비밀번호</button>
+      <button class="tab-btn" data-tab="magic">매직링크</button>
+    </div>
+
+    <!-- 비밀번호 탭 -->
+    <div id="tab-password" class="tab-content">
+      <input type="email" id="email" class="auth-input" placeholder="이메일" autocomplete="email">
+      <input type="password" id="password" class="auth-input" placeholder="비밀번호 (6자 이상)" autocomplete="current-password">
+      <p class="error-msg" id="pw-error"></p>
+      <p class="success-msg" id="pw-success"></p>
+      <div class="btn-row">
+        <button id="login-btn" class="btn-primary">로그인</button>
+        <button id="signup-btn" class="btn-secondary">회원가입</button>
+      </div>
+    </div>
+
+    <!-- 매직링크 탭 -->
+    <div id="tab-magic" class="tab-content hidden">
+      <div id="magic-form">
+        <input type="email" id="magic-email" class="auth-input" placeholder="이메일" autocomplete="email">
+        <p class="error-msg" id="magic-error"></p>
+        <button id="magic-btn" class="btn-primary" style="width:100%">링크 전송</button>
+        <p class="magic-hint">입력한 이메일로 로그인 링크가 발송됩니다. 비밀번호가 필요 없습니다.</p>
+      </div>
+      <div id="magic-sent" class="hidden">
+        <div class="magic-sent-box">
+          <div class="magic-sent-icon">✉️</div>
+          <p class="magic-sent-title">이메일을 확인하세요</p>
+          <p class="magic-sent-desc">전송된 링크를 클릭하면 자동으로 로그인됩니다.</p>
+          <button id="magic-resend" class="btn-text">다시 전송하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="divider"><span>또는</span></div>
+
+    <!-- OAuth -->
+    <button id="google-btn" class="btn-oauth btn-google">
+      <span class="oauth-icon">G</span>
+      Google로 로그인
+    </button>
+    <button id="github-btn" class="btn-oauth btn-github">
+      <span class="oauth-icon">⬡</span>
+      GitHub로 로그인
+    </button>
+  </div>
+
+  <script>
+    /* 이미 로그인된 경우 보드로 이동 */
+    (async () => {
+      const session = await getSession();
+      if (session) window.location.replace('index.html');
+    })();
+
+    /* 로그인 성공 시 보드로 이동 */
+    onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        window.location.replace('index.html');
+      }
+    });
+
+    /* 에러 메시지 한국어 변환 */
+    function getErrorMessage(error) {
+      const map = {
+        'Invalid login credentials':                                      '이메일 또는 비밀번호가 올바르지 않습니다.',
+        'Email not confirmed':                                            '이메일 인증이 필요합니다. 확인 메일을 확인해 주세요.',
+        'User already registered':                                        '이미 가입된 이메일입니다.',
+        'Password should be at least 6 characters':                       '비밀번호는 6자 이상이어야 합니다.',
+        'For security purposes, you can only request this once every 60 seconds': '60초 후 다시 시도해 주세요.',
+        'Unable to validate email address: invalid format':               '유효하지 않은 이메일 형식입니다.',
+      };
+      return map[error.message] || error.message;
+    }
+
+    /* ── 탭 전환 ── */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+      });
+    });
+
+    /* ── 비밀번호 로그인 ── */
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl  = document.getElementById('pw-error');
+      const successEl = document.getElementById('pw-success');
+      errorEl.textContent = '';
+      successEl.textContent = '';
+
+      if (!email || !password) { errorEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+
+      const { error } = await signInWithEmail(email, password);
+      if (error) errorEl.textContent = getErrorMessage(error);
+    });
+
+    /* ── 이메일 회원가입 ── */
+    document.getElementById('signup-btn').addEventListener('click', async () => {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl  = document.getElementById('pw-error');
+      const successEl = document.getElementById('pw-success');
+      errorEl.textContent = '';
+      successEl.textContent = '';
+
+      if (!email || !password) { errorEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+      if (password.length < 6) { errorEl.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
+
+      const { data, error } = await signUpWithEmail(email, password);
+      if (error) {
+        errorEl.textContent = getErrorMessage(error);
+      } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+        errorEl.textContent = '이미 가입된 이메일입니다.';
+      } else {
+        successEl.textContent = '확인 이메일이 발송되었습니다. 메일함을 확인해 주세요.';
+      }
+    });
+
+    /* ── 매직링크 전송 ── */
+    document.getElementById('magic-btn').addEventListener('click', async () => {
+      const email   = document.getElementById('magic-email').value.trim();
+      const errorEl = document.getElementById('magic-error');
+      errorEl.textContent = '';
+
+      if (!email) { errorEl.textContent = '이메일을 입력하세요.'; return; }
+
+      const { error } = await signInWithMagicLink(email);
+      if (error) {
+        errorEl.textContent = getErrorMessage(error);
+      } else {
+        document.getElementById('magic-form').classList.add('hidden');
+        document.getElementById('magic-sent').classList.remove('hidden');
+      }
+    });
+
+    /* ── 매직링크 다시 전송 ── */
+    document.getElementById('magic-resend').addEventListener('click', () => {
+      document.getElementById('magic-form').classList.remove('hidden');
+      document.getElementById('magic-sent').classList.add('hidden');
+      document.getElementById('magic-error').textContent = '';
+    });
+
+    /* ── Google OAuth ── */
+    document.getElementById('google-btn').addEventListener('click', async () => {
+      const { error } = await signInWithGoogle();
+      if (error) alert('Google 로그인 오류: ' + error.message);
+    });
+
+    /* ── GitHub OAuth ── */
+    document.getElementById('github-btn').addEventListener('click', async () => {
+      const { error } = await signInWithGitHub();
+      if (error) alert('GitHub 로그인 오류: ' + error.message);
+    });
+  </script>
+</body>
+</html>

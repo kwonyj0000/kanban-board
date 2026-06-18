@@ -54,14 +54,14 @@
 | A-02 | Supabase Auth URL 설정 (Site URL, Redirect URL) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 2 |
 | A-03 | Google Cloud OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 3 |
 | A-04 | GitHub OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 4 |
-| A-05 | `config.js` 생성 (Supabase URL · anon key) | 코드 | ⬜ 미완료 | — |
-| A-06 | `config.example.js` 생성 (키 없는 템플릿) | 코드 | ⬜ 미완료 | — |
-| A-07 | `auth.js` 생성 (Supabase 클라이언트 + 인증 함수) | 코드 | ⬜ 미완료 | — |
-| A-08 | `login.html` 생성 (이메일 폼 + Google/GitHub 버튼) | 코드 | ⬜ 미완료 | — |
-| A-09 | `index.html` 수정 (세션 체크, 사용자 정보, 로그아웃) | 코드 | ⬜ 미완료 | — |
-| A-10 | `app.js` 수정 (사용자별 localStorage 키 분리) | 코드 | ⬜ 미완료 | `kanban-board-${userId}` |
-| A-11 | `style.css` 수정 (로그인 페이지 스타일) | 코드 | ⬜ 미완료 | — |
-| A-12 | `.gitignore`에 `config.js` 추가 | 코드 | ⬜ 미완료 | — |
+| A-05 | `config.js` 생성 (Supabase URL · anon key) — 사용자가 직접 값 입력 필요 | 코드 | ✅ 완료 | `config.example.js` 제공 |
+| A-06 | `config.example.js` 생성 (키 없는 커밋용 템플릿) | 코드 | ✅ 완료 | — |
+| A-07 | `auth.js` 생성 (이메일·매직링크·Google·GitHub·로그아웃·세션) | 코드 | ✅ 완료 | — |
+| A-08 | `login.html` 생성 (비밀번호 탭 + 매직링크 탭 + Google/GitHub 버튼) | 코드 | ✅ 완료 | — |
+| A-09 | `index.html` 수정 (세션 체크, 로딩 화면, 사용자 정보, 로그아웃) | 코드 | ✅ 완료 | — |
+| A-10 | `app.js` 수정 (사용자별 localStorage 키 분리) | 코드 | ✅ 완료 | `kanban-board-${userId}` |
+| A-11 | `style.css` 수정 (로그인 페이지 스타일 + 헤더 유저 정보) | 코드 | ✅ 완료 | — |
+| A-12 | `.gitignore`에 `config.js` 추가 | 코드 | ✅ 완료 | — |
 | A-13 | 로컬 검증 (이메일/Google/GitHub 로그인 동작 확인) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` 체크리스트 |
 | A-14 | `kanban-board` 레포에 push 및 Pages 반영 확인 | 코드 + 사용자 | ⬜ 미완료 | — |
 

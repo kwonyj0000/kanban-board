@@ -14,9 +14,12 @@ body {
 
 /* ── Header ── */
 header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background-color: #2c3e50;
   color: #ffffff;
-  padding: 16px 24px;
+  padding: 12px 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -24,6 +27,48 @@ header h1 {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.5px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+#user-email {
+  font-size: 0.82rem;
+  opacity: 0.8;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#logout-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+#logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── 인증 로딩 ── */
+.auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #666;
+  font-size: 0.95rem;
 }
 
 /* ── Board ── */
@@ -256,5 +301,264 @@ header h1 {
 
   .column {
     min-width: 220px;
+  }
+}
+
+/* ════════════════════════════════════════
+   로그인 페이지
+   ════════════════════════════════════════ */
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 24px;
+}
+
+.login-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  font-size: 0.88rem;
+  color: #888;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* ── 탭 ── */
+.auth-tabs {
+  display: flex;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  background: #f7f7f7;
+  color: #666;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tab-btn.active {
+  background: #2c3e50;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ── 탭 콘텐츠 ── */
+.tab-content {
+  margin-bottom: 4px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── 입력 필드 ── */
+.auth-input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  border-color: #4a90d9;
+}
+
+/* ── 에러 / 성공 메시지 ── */
+.error-msg {
+  color: #e74c3c;
+  font-size: 0.82rem;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+
+.success-msg {
+  color: #27ae60;
+  font-size: 0.82rem;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+
+/* ── 버튼 행 ── */
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 10px;
+  background-color: #2c3e50;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #3d5166;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 10px;
+  background-color: #ffffff;
+  color: #2c3e50;
+  border: 1.5px solid #2c3e50;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #f0f4f8;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #4a90d9;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-top: 8px;
+}
+
+/* ── 매직링크 힌트 ── */
+.magic-hint {
+  font-size: 0.78rem;
+  color: #999;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* ── 매직링크 전송 완료 ── */
+.magic-sent-box {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.magic-sent-icon {
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+}
+
+.magic-sent-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 6px;
+}
+
+.magic-sent-desc {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* ── 구분선 ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+/* ── OAuth 버튼 ── */
+.btn-oauth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.oauth-icon {
+  font-size: 1rem;
+  font-weight: 700;
+  width: 20px;
+  text-align: center;
+}
+
+.btn-google {
+  background: #ffffff;
+  color: #444;
+  border-color: #ddd;
+}
+
+.btn-google:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.btn-github {
+  background: #24292e;
+  color: #ffffff;
+  border-color: #24292e;
+}
+
+.btn-github:hover {
+  background: #3a3f44;
+}
+
+/* ── 로그인 모바일 ── */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 20px;
   }
 }
