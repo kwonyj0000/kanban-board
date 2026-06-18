@@ -157,3 +157,8 @@
 - `auth.js` — `getAcceptedSharedBoards()` 추가 (수락된 공유 보드 목록 조회)
 - `index.html` — 헤더에 `<select id="board-switcher">` 추가; `setupBoardSwitcher()` 함수 구현 (공유 보드 셀렉터, 전환 시 Realtime 재구독); `showBoard()`에 `window.__ownBoardId` 추가, `setupBoardSwitcher()` 호출; 초대 수락 후 셀렉터 자동 갱신
 - `style.css` — `.board-switcher` / `.board-switcher option` 스타일 추가 (헤더 반투명 배경)
+
+**35. "kanban 보드 title 수정하는 기능 추가해줘."**
+- `auth.js` — `getBoardTitle(boardId)` / `updateBoardTitle(boardId, title)` 추가 (boards 테이블 조회·업데이트)
+- `index.html` — `<h1>`에 `id="board-title"` 추가; `setupBoardTitle()` 구현 (소유자: 클릭 시 인라인 input 편집 → Enter/blur 저장, Escape 취소; 멤버: 읽기 전용); 보드 전환·초대 수락 후 제목 자동 갱신; 저장 성공 시 board-switcher 옵션 텍스트도 동기화
+- `style.css` — `#board-title.editable` hover 하이라이트, `.title-edit-input` 인라인 편집 스타일

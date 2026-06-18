@@ -26,7 +26,7 @@
   </div>
 
   <header id="main-header" style="display:none">
-    <h1>Kanban Board</h1>
+    <h1 id="board-title">Kanban Board</h1>
     <div class="user-info">
       <select id="board-switcher" class="board-switcher" style="display:none"></select>
       <span id="user-email"></span>
@@ -108,8 +108,59 @@
       }
 
       await init();
+      await setupBoardTitle();
       await setupInviteBanner();
       await setupBoardSwitcher();
+    }
+
+    /* 보드 제목 표시 + 소유자일 때 인라인 편집 */
+    async function setupBoardTitle() {
+      const title = await getBoardTitle(window.__boardId);
+      const el = document.getElementById('board-title');
+      el.textContent = title;
+
+      el.onclick = null;
+      el.classList.remove('editable');
+
+      if (!window.__isOwner) return;
+
+      el.classList.add('editable');
+      el.title = '클릭하여 제목 수정';
+
+      el.onclick = () => {
+        if (el.querySelector('input')) return;
+        const prev = el.textContent;
+        el.textContent = '';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = prev;
+        input.className = 'title-edit-input';
+        el.appendChild(input);
+        input.focus();
+        input.select();
+
+        let done = false;
+        const finish = async (save) => {
+          if (done) return;
+          done = true;
+          const next = input.value.trim() || prev;
+          el.textContent = save ? next : prev;
+          if (save && next !== prev) {
+            const { error } = await updateBoardTitle(window.__boardId, next);
+            if (error) { el.textContent = prev; return; }
+            /* 보드 전환 셀렉터 옵션 텍스트도 갱신 */
+            const opt = document.querySelector(`#board-switcher option[value="${window.__boardId}"]`);
+            if (opt) opt.textContent = next;
+          }
+        };
+
+        input.onblur  = () => finish(true);
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+          if (e.key === 'Escape') { done = false; finish(false); }
+        };
+      };
     }
 
     /* 보드 전환 셀렉터 — 수락된 공유 보드가 있을 때만 표시 */
@@ -145,6 +196,7 @@
           const d = await loadCardsFromSupabase();
           if (d) renderBoard(d);
         });
+        await setupBoardTitle();
       };
     }
 
@@ -170,7 +222,8 @@
             const d = await loadCardsFromSupabase();
             if (d) renderBoard(d);
           });
-          /* 수락 후 셀렉터 갱신 — 새 공유 보드가 목록에 추가됨 */
+          /* 수락 후 제목·셀렉터 갱신 */
+          await setupBoardTitle();
           await setupBoardSwitcher();
         }
       };

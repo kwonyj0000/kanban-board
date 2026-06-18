@@ -29,6 +29,30 @@ header h1 {
   letter-spacing: 0.5px;
 }
 
+#board-title.editable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 6px;
+  transition: background 0.15s;
+}
+
+#board-title.editable:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.title-edit-input {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+  color: #ffffff;
+  outline: none;
+  width: 220px;
+  max-width: 320px;
+}
+
 .user-info {
   display: flex;
   align-items: center;

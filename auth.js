@@ -157,6 +157,23 @@ async function removeMember(memberId) {
   return { error };
 }
 
+async function getBoardTitle(boardId) {
+  const { data } = await supabaseClient
+    .from('boards')
+    .select('title')
+    .eq('id', boardId)
+    .single();
+  return data?.title || 'Kanban Board';
+}
+
+async function updateBoardTitle(boardId, title) {
+  const { error } = await supabaseClient
+    .from('boards')
+    .update({ title })
+    .eq('id', boardId);
+  return { error };
+}
+
 async function getAcceptedSharedBoards() {
   const { data } = await supabaseClient
     .from('board_members')
