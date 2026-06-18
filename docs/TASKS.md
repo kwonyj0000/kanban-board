@@ -33,6 +33,40 @@
 
 ---
 
+## Phase 배포 — GitHub Pages
+
+| # | 태스크 | 주체 | 상태 | 비고 |
+|---|--------|------|------|------|
+| D-01 | 배포용 새 레포 생성 (`kwonyj0000/kanban-board`) | 사용자 직접 | ✅ 완료 | — |
+| D-02 | `.gitignore` 작성 (node_modules 제외) | 코드 | ✅ 완료 | — |
+| D-03 | kanban 코드를 새 레포에 push | 코드 | ✅ 완료 | rsync + git init |
+| D-04 | `GITHUB_PAGES.md` 배포 가이드 작성 | 코드 | ✅ 완료 | `docs/GITHUB_PAGES.md` |
+| D-05 | GitHub Settings > Pages 활성화 (branch: main, folder: root) | 사용자 직접 | ✅ 완료 | — |
+| D-06 | 배포 URL 확인 | 사용자 직접 | ✅ 완료 | `https://kwonyj0000.github.io/kanban-board/` |
+
+---
+
+## Phase 인증 — Supabase Auth
+
+| # | 태스크 | 주체 | 상태 | 비고 |
+|---|--------|------|------|------|
+| A-01 | Supabase 프로젝트 생성 | 사용자 직접 | ⬜ 미완료 | Project URL · anon key 복사 |
+| A-02 | Supabase Auth URL 설정 (Site URL, Redirect URL) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 2 |
+| A-03 | Google Cloud OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 3 |
+| A-04 | GitHub OAuth 앱 생성 및 Supabase에 등록 | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` Step 4 |
+| A-05 | `config.js` 생성 (Supabase URL · anon key) | 코드 | ⬜ 미완료 | — |
+| A-06 | `config.example.js` 생성 (키 없는 템플릿) | 코드 | ⬜ 미완료 | — |
+| A-07 | `auth.js` 생성 (Supabase 클라이언트 + 인증 함수) | 코드 | ⬜ 미완료 | — |
+| A-08 | `login.html` 생성 (이메일 폼 + Google/GitHub 버튼) | 코드 | ⬜ 미완료 | — |
+| A-09 | `index.html` 수정 (세션 체크, 사용자 정보, 로그아웃) | 코드 | ⬜ 미완료 | — |
+| A-10 | `app.js` 수정 (사용자별 localStorage 키 분리) | 코드 | ⬜ 미완료 | `kanban-board-${userId}` |
+| A-11 | `style.css` 수정 (로그인 페이지 스타일) | 코드 | ⬜ 미완료 | — |
+| A-12 | `.gitignore`에 `config.js` 추가 | 코드 | ⬜ 미완료 | — |
+| A-13 | 로컬 검증 (이메일/Google/GitHub 로그인 동작 확인) | 사용자 직접 | ⬜ 미완료 | `docs/OAUTH.md` 체크리스트 |
+| A-14 | `kanban-board` 레포에 push 및 Pages 반영 확인 | 코드 + 사용자 | ⬜ 미완료 | — |
+
+---
+
 ## Phase 2 — 백엔드 / RDB 연동
 
 | # | 태스크 | 비고 |
