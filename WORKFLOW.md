@@ -158,6 +158,10 @@
 - `index.html` — 헤더에 `<select id="board-switcher">` 추가; `setupBoardSwitcher()` 함수 구현 (공유 보드 셀렉터, 전환 시 Realtime 재구독); `showBoard()`에 `window.__ownBoardId` 추가, `setupBoardSwitcher()` 호출; 초대 수락 후 셀렉터 자동 갱신
 - `style.css` — `.board-switcher` / `.board-switcher option` 스타일 추가 (헤더 반투명 배경)
 
+**36. "보드 전환 기능관련해서 내 보드랑 공유보드가 나오기는하는데, 내가 공유한 보드는 안나와야하는게 맞는것 같아. 이것 수정해줘."**
+- 원인: `board_owner_manage_members` RLS 정책이 소유자에게 자기 보드의 모든 `board_members` 행을 노출 → `getAcceptedSharedBoards()`가 소유자 보드도 "공유 보드"로 포함
+- 수정: `.not('user_id', 'is', null)` → `.eq('user_id', user.id)` 로 교체 — 현재 로그인 사용자가 멤버인 행만 반환
+
 **35. "kanban 보드 title 수정하는 기능 추가해줘."**
 - `auth.js` — `getBoardTitle(boardId)` / `updateBoardTitle(boardId, title)` 추가 (boards 테이블 조회·업데이트)
 - `index.html` — `<h1>`에 `id="board-title"` 추가; `setupBoardTitle()` 구현 (소유자: 클릭 시 인라인 input 편집 → Enter/blur 저장, Escape 취소; 멤버: 읽기 전용); 보드 전환·초대 수락 후 제목 자동 갱신; 저장 성공 시 board-switcher 옵션 텍스트도 동기화

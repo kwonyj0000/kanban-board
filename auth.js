@@ -175,11 +175,13 @@ async function updateBoardTitle(boardId, title) {
 }
 
 async function getAcceptedSharedBoards() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return [];
   const { data } = await supabaseClient
     .from('board_members')
     .select('board_id, boards(id, title)')
     .eq('status', 'accepted')
-    .not('user_id', 'is', null);
+    .eq('user_id', user.id);
   return (data || []).map(m => ({
     id: m.board_id,
     title: m.boards?.title || '공유 보드',
