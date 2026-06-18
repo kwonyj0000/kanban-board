@@ -395,6 +395,14 @@ header h1 {
   border-color: #4a90d9;
 }
 
+.auth-input.input-error {
+  border-color: #e74c3c;
+}
+
+.auth-input.input-error:focus {
+  border-color: #e74c3c;
+}
+
 /* ── 에러 / 성공 메시지 ── */
 .error-msg {
   color: #e74c3c;

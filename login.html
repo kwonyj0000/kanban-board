@@ -17,8 +17,8 @@
 
     <!-- 탭 -->
     <div class="auth-tabs">
-      <button class="tab-btn active" data-tab="password">비밀번호</button>
-      <button class="tab-btn" data-tab="magic">매직링크</button>
+      <button type="button" class="tab-btn active" data-tab="password">비밀번호</button>
+      <button type="button" class="tab-btn" data-tab="magic">매직링크</button>
     </div>
 
     <!-- 비밀번호 탭 -->
@@ -28,8 +28,8 @@
       <p class="error-msg" id="pw-error"></p>
       <p class="success-msg" id="pw-success"></p>
       <div class="btn-row">
-        <button id="login-btn" class="btn-primary">로그인</button>
-        <button id="signup-btn" class="btn-secondary">회원가입</button>
+        <button type="button" id="login-btn" class="btn-primary">로그인</button>
+        <button type="button" id="signup-btn" class="btn-secondary">회원가입</button>
       </div>
     </div>
 
@@ -38,7 +38,7 @@
       <div id="magic-form">
         <input type="email" id="magic-email" class="auth-input" placeholder="이메일" autocomplete="email">
         <p class="error-msg" id="magic-error"></p>
-        <button id="magic-btn" class="btn-primary" style="width:100%">링크 전송</button>
+        <button type="button" id="magic-btn" class="btn-primary" style="width:100%">링크 전송</button>
         <p class="magic-hint">입력한 이메일로 로그인 링크가 발송됩니다. 비밀번호가 필요 없습니다.</p>
       </div>
       <div id="magic-sent" class="hidden">
@@ -46,7 +46,7 @@
           <div class="magic-sent-icon">✉️</div>
           <p class="magic-sent-title">이메일을 확인하세요</p>
           <p class="magic-sent-desc">전송된 링크를 클릭하면 자동으로 로그인됩니다.</p>
-          <button id="magic-resend" class="btn-text">다시 전송하기</button>
+          <button type="button" id="magic-resend" class="btn-text">다시 전송하기</button>
         </div>
       </div>
     </div>
@@ -55,11 +55,11 @@
     <div class="divider"><span>또는</span></div>
 
     <!-- OAuth -->
-    <button id="google-btn" class="btn-oauth btn-google">
+    <button type="button" id="google-btn" class="btn-oauth btn-google">
       <span class="oauth-icon">G</span>
       Google로 로그인
     </button>
-    <button id="github-btn" class="btn-oauth btn-github">
+    <button type="button" id="github-btn" class="btn-oauth btn-github">
       <span class="oauth-icon">⬡</span>
       GitHub로 로그인
     </button>
@@ -92,6 +92,14 @@
       return map[error.message] || error.message;
     }
 
+    /* 입력 시 에러 테두리 제거 */
+    ['email', 'password'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        document.getElementById(id).classList.remove('input-error');
+        document.getElementById('pw-error').textContent = '';
+      });
+    });
+
     /* ── 탭 전환 ── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -102,34 +110,58 @@
       });
     });
 
+    /* 빈 필드에 빨간 테두리 표시 후 반환 */
+    function validatePasswordForm() {
+      const emailEl    = document.getElementById('email');
+      const passwordEl = document.getElementById('password');
+      const errorEl    = document.getElementById('pw-error');
+      const email    = emailEl.value.trim();
+      const password = passwordEl.value;
+
+      emailEl.classList.remove('input-error');
+      passwordEl.classList.remove('input-error');
+      errorEl.textContent = '';
+
+      if (!email) {
+        emailEl.classList.add('input-error');
+        errorEl.textContent = '이메일을 입력하세요.';
+        emailEl.focus();
+        return null;
+      }
+      if (!password) {
+        passwordEl.classList.add('input-error');
+        errorEl.textContent = '비밀번호를 입력하세요.';
+        passwordEl.focus();
+        return null;
+      }
+      return { email, password };
+    }
+
     /* ── 비밀번호 로그인 ── */
     document.getElementById('login-btn').addEventListener('click', async () => {
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const errorEl  = document.getElementById('pw-error');
-      const successEl = document.getElementById('pw-success');
-      errorEl.textContent = '';
-      successEl.textContent = '';
+      const vals = validatePasswordForm();
+      if (!vals) return;
+      const errorEl = document.getElementById('pw-error');
 
-      if (!email || !password) { errorEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
-
-      const { error } = await signInWithEmail(email, password);
+      const { error } = await signInWithEmail(vals.email, vals.password);
       if (error) errorEl.textContent = getErrorMessage(error);
     });
 
     /* ── 이메일 회원가입 ── */
     document.getElementById('signup-btn').addEventListener('click', async () => {
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
+      const vals = validatePasswordForm();
+      if (!vals) return;
       const errorEl  = document.getElementById('pw-error');
       const successEl = document.getElementById('pw-success');
-      errorEl.textContent = '';
       successEl.textContent = '';
 
-      if (!email || !password) { errorEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
-      if (password.length < 6) { errorEl.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
+      if (vals.password.length < 6) {
+        document.getElementById('password').classList.add('input-error');
+        errorEl.textContent = '비밀번호는 6자 이상이어야 합니다.';
+        return;
+      }
 
-      const { data, error } = await signUpWithEmail(email, password);
+      const { data, error } = await signUpWithEmail(vals.email, vals.password);
       if (error) {
         errorEl.textContent = getErrorMessage(error);
       } else if (data.user && data.user.identities && data.user.identities.length === 0) {
