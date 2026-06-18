@@ -1,7 +1,7 @@
 const {
   createCard, addCardToColumn, saveToStorage, loadFromStorage,
   updateBadges, getDragAfterElement, init, renderBoard,
-  renderMemberList,
+  renderMemberList, renderActivityLog, formatLogTime,
 } = require('./app');
 
 const COLUMNS = ['todo', 'inprogress', 'done'];
@@ -16,6 +16,8 @@ global.removeMember          = jest.fn(async () => ({ error: null }));
 global.getPendingInvitations = jest.fn(async () => []);
 global.acceptInvitation      = jest.fn(async () => ({ error: null }));
 global.subscribeToBoardCards = jest.fn(() => ({ unsubscribe: jest.fn() }));
+global.logActivity           = jest.fn(async () => {});
+global.getActivityLogs       = jest.fn(async () => []);
 
 function setupDOM() {
   document.body.innerHTML = `
@@ -53,6 +55,8 @@ beforeEach(() => {
   getPendingInvitations.mockClear();
   acceptInvitation.mockClear();
   subscribeToBoardCards.mockClear();
+  logActivity.mockClear();
+  getActivityLogs.mockClear();
   window.__boardId = 'board-test';
   window.__isOwner = true;
   setupDOM();
@@ -261,4 +265,29 @@ test('T-24: renderMemberList — 멤버일 때 삭제 버튼이 없다', async (
   ]);
   await renderMemberList();
   expect(document.querySelector('.remove-member-btn')).toBeNull();
+});
+
+/* ── 활동 로그 ── */
+
+test('T-25: renderActivityLog — 로그 목록이 렌더링된다', async () => {
+  document.body.innerHTML += '<ul id="activity-log-list"></ul>';
+  getActivityLogs.mockResolvedValueOnce([
+    { id: '1', user_email: 'a@b.com', action: '카드 추가 (To-do): 테스트', created_at: new Date().toISOString() },
+  ]);
+  await renderActivityLog();
+  const items = document.querySelectorAll('.log-item');
+  expect(items.length).toBe(1);
+  expect(items[0].querySelector('.log-action').textContent).toContain('카드 추가');
+});
+
+test('T-26: renderActivityLog — 로그 없을 때 안내 문구가 표시된다', async () => {
+  document.body.innerHTML += '<ul id="activity-log-list"></ul>';
+  getActivityLogs.mockResolvedValueOnce([]);
+  await renderActivityLog();
+  expect(document.querySelector('.log-empty')).not.toBeNull();
+});
+
+test('T-27: formatLogTime — 60초 미만이면 "방금 전"을 반환한다', () => {
+  const recent = new Date(Date.now() - 10000).toISOString();
+  expect(formatLogTime(recent)).toBe('방금 전');
 });

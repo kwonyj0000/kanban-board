@@ -1,6 +1,20 @@
 let cardIdCounter = 0;
 
-const COLUMNS = ['todo', 'inprogress', 'done'];
+const COLUMNS   = ['todo', 'inprogress', 'done'];
+const COL_NAMES = { todo: 'To-do', inprogress: 'In-progress', done: 'Done' };
+
+let dragSourceColumnId = null;
+
+function _log(action) {
+  if (typeof logActivity !== 'undefined' && window.__boardId) {
+    logActivity(window.__boardId, action).then(_refreshLogIfOpen);
+  }
+}
+
+function _refreshLogIfOpen() {
+  const panel = document.getElementById('activity-log-panel');
+  if (panel && !panel.classList.contains('hidden')) renderActivityLog();
+}
 
 const initialCards = {
   todo:       ['디자인 시안 검토', '요구사항 분석', 'API 명세 작성'],
@@ -82,9 +96,11 @@ function createCard(text) {
   deleteBtn.title = '카드 삭제';
   deleteBtn.addEventListener('click', e => {
     e.stopPropagation();
+    const cardText = card.querySelector('.card-text')?.textContent || '';
     card.remove();
     updateBadges();
     saveToStorage();
+    _log(`카드 삭제: ${cardText}`);
   });
 
   card.appendChild(textSpan);
@@ -115,7 +131,10 @@ function createCard(text) {
       newSpan.textContent = save && newText ? newText : original;
       textarea.replaceWith(newSpan);
       card.draggable = true;
-      if (save && newText && newText !== original) saveToStorage();
+      if (save && newText && newText !== original) {
+        saveToStorage();
+        _log(`카드 수정: ${original} → ${newText}`);
+      }
     };
 
     textarea.addEventListener('blur', () => commit(true));
@@ -144,6 +163,7 @@ function addCardToColumn(columnId, text) {
 /* ── Mouse Drag & Drop ── */
 
 function onDragStart(e) {
+  dragSourceColumnId = e.target.closest('.column')?.id || null;
   e.dataTransfer.setData('text/plain', e.target.id);
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => e.target.classList.add('dragging'), 0);
@@ -182,8 +202,10 @@ function setupColumnDrop(column) {
     const card   = document.getElementById(cardId);
     if (!card) return;
 
-    const list    = column.querySelector('.card-list');
-    const afterEl = getDragAfterElement(list, e.clientY);
+    const targetColId = column.id;
+    const cardText    = card.querySelector('.card-text')?.textContent || '';
+    const list        = column.querySelector('.card-list');
+    const afterEl     = getDragAfterElement(list, e.clientY);
     if (afterEl) {
       list.insertBefore(card, afterEl);
     } else {
@@ -192,6 +214,9 @@ function setupColumnDrop(column) {
 
     updateBadges();
     saveToStorage();
+    if (dragSourceColumnId && dragSourceColumnId !== targetColId) {
+      _log(`카드 이동: ${cardText} (${COL_NAMES[dragSourceColumnId]} → ${COL_NAMES[targetColId]})`);
+    }
   });
 }
 
@@ -201,6 +226,7 @@ const touch = {
   card: null, ghost: null,
   startX: 0, startY: 0,
   dragging: false,
+  sourceColId: null,
 };
 
 const DRAG_THRESHOLD = 8;
@@ -227,6 +253,7 @@ function onTouchStart(e) {
   touch.startX = t.clientX;
   touch.startY = t.clientY;
   touch.dragging = false;
+  touch.sourceColId = e.currentTarget.closest('.column')?.id || null;
 }
 
 function onTouchMove(e) {
@@ -276,8 +303,10 @@ function onTouchEnd(e) {
     const t   = e.changedTouches[0];
     const col = getColumnAtPoint(t.clientX, t.clientY);
     if (col) {
-      const list    = col.querySelector('.card-list');
-      const afterEl = getDragAfterElement(list, t.clientY);
+      const targetColId = col.id;
+      const cardText    = touch.card.querySelector('.card-text')?.textContent || '';
+      const list        = col.querySelector('.card-list');
+      const afterEl     = getDragAfterElement(list, t.clientY);
       if (afterEl) {
         list.insertBefore(touch.card, afterEl);
       } else {
@@ -285,6 +314,9 @@ function onTouchEnd(e) {
       }
       updateBadges();
       saveToStorage();
+      if (touch.sourceColId && touch.sourceColId !== targetColId) {
+        _log(`카드 이동: ${cardText} (${COL_NAMES[touch.sourceColId]} → ${COL_NAMES[targetColId]})`);
+      }
     }
   }
 
@@ -297,9 +329,11 @@ function setupAddButton(btn) {
   btn.addEventListener('click', () => {
     const text = prompt('카드 내용을 입력하세요:');
     if (text && text.trim()) {
-      addCardToColumn(btn.dataset.target, text.trim());
+      const colId = btn.dataset.target;
+      addCardToColumn(colId, text.trim());
       updateBadges();
       saveToStorage();
+      _log(`카드 추가 (${COL_NAMES[colId]}): ${text.trim()}`);
     }
   });
 }
@@ -342,8 +376,10 @@ async function renderMemberList() {
   });
   list.querySelectorAll('.remove-member-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      const email = btn.closest('.member-item').querySelector('.member-email').textContent;
       await removeMember(btn.dataset.id);
       await renderMemberList();
+      _log(`팀원 제거: ${email}`);
     });
   });
 }
@@ -389,8 +425,53 @@ function setupShareBtn() {
       msg.className = 'invite-msg success';
       emailInput.value = '';
       await renderMemberList();
+      _log(`팀원 초대: ${email}`);
     }
   });
+}
+
+/* ── Activity Log ── */
+
+function formatLogTime(dateStr) {
+  const d    = new Date(dateStr);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60)   return '방금 전';
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+  return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+    + ' ' + d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function renderActivityLog() {
+  const logList = document.getElementById('activity-log-list');
+  if (!logList || !window.__boardId) return;
+  logList.innerHTML = '<li class="log-empty">불러오는 중...</li>';
+  const logs = await getActivityLogs(window.__boardId);
+  if (!logs.length) {
+    logList.innerHTML = '<li class="log-empty">아직 활동 내역이 없습니다.</li>';
+    return;
+  }
+  logList.innerHTML = logs.map(log => `
+    <li class="log-item">
+      <div class="log-action">${log.action}</div>
+      <div class="log-meta">
+        <span class="log-email">${log.user_email || '알 수 없음'}</span>
+        <span class="log-time">${formatLogTime(log.created_at)}</span>
+      </div>
+    </li>
+  `).join('');
+}
+
+function setupActivityLog() {
+  const btn   = document.getElementById('activity-log-btn');
+  const panel = document.getElementById('activity-log-panel');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', () => {
+    const isHidden = panel.classList.toggle('hidden');
+    if (!isHidden) renderActivityLog();
+  });
+  const closeBtn = document.getElementById('close-activity-log');
+  if (closeBtn) closeBtn.addEventListener('click', () => panel.classList.add('hidden'));
 }
 
 /* ── Init ── */
@@ -405,10 +486,12 @@ async function init() {
     window.__realtimeChannel = subscribeToBoardCards(window.__boardId, async () => {
       const data = await loadCardsFromSupabase();
       if (data) renderBoard(data);
+      _refreshLogIfOpen();
     });
   }
 
   setupShareBtn();
+  setupActivityLog();
 }
 
 /* ── Export (테스트) / Auto-init (브라우저) ── */
@@ -418,6 +501,7 @@ if (typeof module !== 'undefined' && module.exports) {
     createCard, addCardToColumn, saveToStorage, loadFromStorage,
     updateBadges, getDragAfterElement, init, renderBoard,
     renderMemberList, setupShareBtn,
+    renderActivityLog, setupActivityLog, formatLogTime,
   };
 } else if (!window.__skipAutoInit) {
   init();

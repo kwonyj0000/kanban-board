@@ -157,6 +157,26 @@ async function removeMember(memberId) {
   return { error };
 }
 
+async function logActivity(boardId, action) {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  await supabaseClient.from('activity_logs').insert({
+    board_id:   boardId,
+    user_id:    user?.id,
+    user_email: user?.email,
+    action,
+  });
+}
+
+async function getActivityLogs(boardId, limit = 50) {
+  const { data } = await supabaseClient
+    .from('activity_logs')
+    .select('id, user_email, action, created_at')
+    .eq('board_id', boardId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
 async function getBoardTitle(boardId) {
   const { data } = await supabaseClient
     .from('boards')

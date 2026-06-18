@@ -31,6 +31,7 @@
       <select id="board-switcher" class="board-switcher" style="display:none"></select>
       <span id="user-email"></span>
       <button id="share-btn" class="share-btn" style="display:none">공유</button>
+      <button id="activity-log-btn" class="activity-log-btn">로그</button>
       <button id="logout-btn">로그아웃</button>
     </div>
   </header>
@@ -77,6 +78,15 @@
       <ul id="member-list" class="member-list"></ul>
       <button id="close-modal" class="modal-close-btn">닫기</button>
     </div>
+  </div>
+
+  <!-- 활동 로그 패널 -->
+  <div id="activity-log-panel" class="activity-log-panel hidden">
+    <div class="activity-log-header">
+      <h3>활동 로그</h3>
+      <button id="close-activity-log" class="activity-log-close">×</button>
+    </div>
+    <ul id="activity-log-list" class="activity-log-list"></ul>
   </div>
 
   <!-- app.js 자동 init 비활성화 → 인증 확인 후 수동 호출 -->
@@ -152,6 +162,7 @@
             /* 보드 전환 셀렉터 옵션 텍스트도 갱신 */
             const opt = document.querySelector(`#board-switcher option[value="${window.__boardId}"]`);
             if (opt) opt.textContent = next;
+            logActivity(window.__boardId, `보드 제목 변경: ${prev} → ${next}`);
           }
         };
 
@@ -215,6 +226,7 @@
           window.__boardId = inv.board_id;
           window.__isOwner = false;
           document.getElementById('share-btn').style.display = 'none';
+          logActivity(window.__boardId, '초대 수락');
           if (window.__realtimeChannel) window.__realtimeChannel.unsubscribe();
           const data = await loadCardsFromSupabase();
           renderBoard(data || { todo: [], inprogress: [], done: [] });

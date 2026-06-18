@@ -158,6 +158,14 @@
 - `index.html` — 헤더에 `<select id="board-switcher">` 추가; `setupBoardSwitcher()` 함수 구현 (공유 보드 셀렉터, 전환 시 Realtime 재구독); `showBoard()`에 `window.__ownBoardId` 추가, `setupBoardSwitcher()` 호출; 초대 수락 후 셀렉터 자동 갱신
 - `style.css` — `.board-switcher` / `.board-switcher option` 스타일 추가 (헤더 반투명 배경)
 
+**37. "kanban boadr의 활동 로그를 기록하는 기능을 남겨줘."**
+- `auth.js` — `logActivity(boardId, action)` / `getActivityLogs(boardId, limit)` 추가 (Supabase `activity_logs` 테이블)
+- `app.js` — `COL_NAMES`, `dragSourceColumnId` 추가; 카드 추가/삭제/이동(드래그·터치)/편집, 팀원 초대/제거 시 `_log()` 호출; `renderActivityLog()` / `formatLogTime()` / `setupActivityLog()` 추가; `init()`에 연결; Realtime 콜백에서 패널 자동 갱신
+- `index.html` — 헤더 "로그" 버튼 추가; 오른쪽 슬라이딩 패널(`#activity-log-panel`) 추가; 보드 제목 변경·초대 수락 시 `logActivity` 호출
+- `style.css` — `.activity-log-btn`, `.activity-log-panel` 및 로그 항목 스타일 추가
+- `app.test.js` — `logActivity`/`getActivityLogs` mock 추가, T-25~T-27 신규 테스트 (27개 전체 통과)
+- **사용자 실행 필요 SQL**: `activity_logs` 테이블 + RLS 2개 정책
+
 **36. "보드 전환 기능관련해서 내 보드랑 공유보드가 나오기는하는데, 내가 공유한 보드는 안나와야하는게 맞는것 같아. 이것 수정해줘."**
 - 원인: `board_owner_manage_members` RLS 정책이 소유자에게 자기 보드의 모든 `board_members` 행을 노출 → `getAcceptedSharedBoards()`가 소유자 보드도 "공유 보드"로 포함
 - 수정: `.not('user_id', 'is', null)` → `.eq('user_id', user.id)` 로 교체 — 현재 로그인 사용자가 멤버인 행만 반환
